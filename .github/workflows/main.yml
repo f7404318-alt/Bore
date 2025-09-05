@@ -1,0 +1,24 @@
+name: CI
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Download Bore
+      run: Invoke-WebRequest -Uri "https://github.com/ekzhang/bore/releases/download/v0.4.0/bore-windows-amd64.zip" -OutFile "bore.zip"
+
+    - name: Extract Bore
+      run: Expand-Archive bore.zip -DestinationPath bore
+
+    - name: Enable RDP
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+        Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+
+    - name: Run Bore Tunnel
+      run: .\bore\bore.exe local 3389 --to bore.pub
